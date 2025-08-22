@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,25 +16,21 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-type CardEntry struct {
-	Quantity        string
+type Card struct {
+	Quantity        int
 	Set             string
 	CollectorNumber string
-	DoubleSided     bool
+	Layout          string `json:"layout"`
+	ImageURIs       map[string]string
 }
 
-type Card struct {
-	Quantity  int
-	ImageURIs map[string]string
-}
-
-func parseDecklist(decklist string) []CardEntry {
+func submitDecklist(decklist string) ([]Card, error) {
 	lines := strings.Split(decklist, "\n")
 
 	// Regex: qty, name, set, collector (may contain letters/numbers/hyphens/slashes)
 	re := regexp.MustCompile(`^(\d+)\s+(.+)\s+\(([^)]+)\)\s+([^\s]+)$`)
 
-	var cards []CardEntry
+	var cards []Card
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -41,46 +38,44 @@ func parseDecklist(decklist string) []CardEntry {
 		}
 		matches := re.FindStringSubmatch(line)
 		if matches == nil {
-			fmt.Println("Could not parse line:", line)
-			continue
+			return nil, fmt.Errorf("Could not parse line: %s", line)
 		}
-		doubleSided := strings.Contains(matches[2], "//")
-		cards = append(cards, CardEntry{
-			Quantity:        matches[1],
-			Set:             matches[3],
-			CollectorNumber: matches[4],
-			DoubleSided:     doubleSided,
-		})
-	}
-	return cards
-}
-
-func submitDecklist(cardEntries []CardEntry) ([]Card, error) {
-	var cards []Card
-	for _, cardEntry := range cardEntries {
-		quantity, err := strconv.Atoi(cardEntry.Quantity)
+		quantity, err := strconv.Atoi(matches[1])
+		if err != nil {
+			return nil, fmt.Errorf("Could not parse quantity: %w", err)
+		}
+		var card Card
+		card.Set = matches[3]
+		card.CollectorNumber = matches[4]
+		card.Quantity = quantity
+		url := fmt.Sprintf("https://api.scryfall.com/cards/%s/%s", card.Set, card.CollectorNumber)
+		resp, err := http.Get(url)
 		if err != nil {
 			return nil, err
 		}
+		defer resp.Body.Close()
 
-		front := fmt.Sprintf("https://api.scryfall.com/cards/%s/%s?format=image&version=png", cardEntry.Set, cardEntry.CollectorNumber)
-		if cardEntry.DoubleSided {
-			back := fmt.Sprintf("https://api.scryfall.com/cards/%s/%s?format=image&version=png&face=back", cardEntry.Set, cardEntry.CollectorNumber)
-			cards = append(cards, Card{
-				Quantity: quantity,
-				ImageURIs: map[string]string{
-					"front": front,
-					"back":  back,
-				},
-			})
-		} else {
-			cards = append(cards, Card{
-				Quantity: quantity,
-				ImageURIs: map[string]string{
-					"front": front,
-				},
-			})
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
 		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&card); err != nil {
+			fmt.Printf("JSON error: %v\n", err)
+			return nil, err
+		}
+
+		if card.Layout == "transform" || card.Layout == "modal_dfc" {
+			card.ImageURIs = map[string]string{
+				"front": fmt.Sprintf("https://api.scryfall.com/cards/%s/%s?format=image&version=png", card.Set, card.CollectorNumber),
+				"back":  fmt.Sprintf("https://api.scryfall.com/cards/%s/%s?format=image&version=png&face=back", card.Set, card.CollectorNumber),
+			}
+		} else {
+			card.ImageURIs = map[string]string{
+				"front": fmt.Sprintf("https://api.scryfall.com/cards/%s/%s?format=image&version=png", card.Set, card.CollectorNumber),
+			}
+		}
+
+		cards = append(cards, card)
 	}
 	return cards, nil
 }
@@ -140,9 +135,7 @@ func main() {
 			return
 		}
 
-		cardEntries := parseDecklist(r.FormValue("Decklist"))
-
-		cards, err := submitDecklist(cardEntries)
+		cards, err := submitDecklist(r.FormValue("Decklist"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
