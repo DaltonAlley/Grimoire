@@ -1,6 +1,6 @@
-#Commander Decklist PDF Generator
+# Commander Decklist PDF Generator
 
-##Overview
+## Overview
 
 This project generates a PDF document from a Magic: The Gathering Commander decklist, with each card displayed on its own page, including a small bleed margin for cutting. The tool is designed to process a decklist in a specific text format and produce a printable PDF for easy card cutting and use.
 
