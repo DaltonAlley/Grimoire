@@ -2,7 +2,9 @@
 Magic: The Gathering proxy deck generator.
 
 ## Supported Format
-Processes decklists with card names, set codes, and collector numbers (e.g., 1 Xyris, the Writhing Storm (dmc) 175)
+Processes decklists with card names, set codes, and collector numbers
+- <quantity> <card name> <(set code)> <collector number> 
+- (e.g., 1 Xyris, the Writhing Storm (dmc) 175)
 <img width="888" height="578" alt="Screenshot From 2025-09-06 14-23-21" src="https://github.com/user-attachments/assets/e5b9a0bd-7742-42e1-aaf5-8d86fbed183d" />
 
 
@@ -12,4 +14,4 @@ Input: Accepts a Commander decklist in a text format.
 Output: Generates a PDF with one card per page, including a bleed margin for professional printing and cutting.
 
 ## Roadmap
-[] Multiple configurations of output PDF.
+[ ] PDF Generation template that gets maximum impressions on 8.5x11 paper
