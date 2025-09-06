@@ -8,7 +8,7 @@ Processes decklists with card names, set codes, and collector numbers
 <img width="888" height="528" alt="Screenshot From 2025-09-06 14-39-52" src="https://github.com/user-attachments/assets/28a8399a-cf52-44ea-a875-5b96b691e81c" />
 
 ## What to Expect
-Input: Accepts a decklist exported from Archidekt in a text format.
+Input: Accepts a decklist exported from Archidekt in text format.
 
 Output: Generates a PDF with one card per page, including a bleed margin for professional printing and cutting.
 
