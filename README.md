@@ -1,10 +1,15 @@
 # Grimoire
 Magic: The Gathering proxy deck generator.
 
-This project generates a PDF document from a Magic: The Gathering Commander decklist, with each card displayed on its own page, including a small bleed margin for cutting. The tool is designed to process a decklist in a specific text format and produce a printable PDF for easy card cutting and use.
+## Supported Format
+Processes decklists with card names, set codes, and collector numbers (e.g., 1 Xyris, the Writhing Storm (dmc) 175)
+<img width="888" height="578" alt="Screenshot From 2025-09-06 14-23-21" src="https://github.com/user-attachments/assets/e5b9a0bd-7742-42e1-aaf5-8d86fbed183d" />
 
-Input: Accepts a Commander decklist in a text format (e.g., the provided list with Commander and Mainboard sections).
+
+## What to Expect
+Input: Accepts a Commander decklist in a text format.
 
 Output: Generates a PDF with one card per page, including a bleed margin for professional printing and cutting.
 
-Supported Formats: Processes decklists with card names, set codes, and collector numbers (e.g., 1 Xyris, the Writhing Storm (dmc) 175).
+## Roadmap
+[] Multiple configurations of output PDF.
