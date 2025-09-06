@@ -4,7 +4,7 @@ Magic: The Gathering proxy deck generator.
 ## Supported Format
 Processes decklists with card names, set codes, and collector numbers
 - quantity card name (set code) collector number 
-- (e.g., 1 Xyris, the Writhing Storm (dmc) 175)
+- e.g., 1 Xyris, the Writhing Storm (dmc) 175
 <img width="888" height="578" alt="Screenshot From 2025-09-06 14-23-21" src="https://github.com/user-attachments/assets/e5b9a0bd-7742-42e1-aaf5-8d86fbed183d" />
 
 
