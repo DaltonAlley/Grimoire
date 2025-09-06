@@ -13,6 +13,6 @@ Input: Accepts a decklist exported from Archidekt in text format.
 Output: Generates a PDF with one card per page, including a bleed margin for professional printing and cutting.
 
 ## Roadmap
-[ ] Improve UI
-[ ] PDF Generation template that creates maximum number of impressions on 8.5x11 paper
-[ ] Support additional decklist platforms (e.g., Moxfield, Deckbox)
+- [ ] Improve UI
+- [ ] PDF Generation template that creates maximum number of impressions on 8.5x11 paper
+- [ ] Support additional decklist platforms (e.g., Moxfield, Deckbox)
