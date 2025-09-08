@@ -9,21 +9,14 @@ body {
     background: linear-gradient(135deg, #221238 0%, #2c1c5c 25%, #3c2672 50%, #4c3692 75%, #5c46a2 100%);
     background-attachment: fixed;
 }
-
-
-.pirata-one-300 {
-    font-family: "Pirata One", system-ui;
-    font-weight: 300;
-    font-style: normal;
-  }
   
-
 .grimoire-container {
-    display: grid;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     height: 100%;
-    grid-template-columns: 33% 33% 33%;
-    grid-template-rows: 33% 33% 33%;
+    width: 100%;
 }
 
 .grimoire-header {
@@ -31,9 +24,7 @@ body {
     flex-direction: row;
     justify-content: center;
     align-items: end;
-    grid-column: 2;
-    grid-row: 1;
-    gap: 30px;
+    gap: 20px;
     margin: 1.5rem;
 }
 
@@ -41,7 +32,7 @@ body {
     font-family: "Pirata One", system-ui;
     font-weight: 300;
     font-style: normal;
-    font-size: 100px;
+    font-size: 80px;
     line-height: 1;
     color: #e9d5ff;
     padding: 0;
@@ -49,16 +40,17 @@ body {
 }
 
 .circular-button {
+    justify-content: center;
+    align-items: center;
     display: flex;
-    grid-column: 2;
-    grid-row: 1;
-    width: 100px; /* Set desired size */
-    height: 100px;
+    width: 80px; /* Set desired size */
+    height: 80px;
     border-radius: 50%; /* Makes it circular */
     overflow: hidden; /* Clips image to circle */
     border: none; /* Remove default button border */
     padding: 0; /* Remove default padding */
     background: none; /* Optional: remove default background */
+    flex-shrink: 0;
   }
   
   .circular-button img {
@@ -68,11 +60,10 @@ body {
   }
 
   .grimoire-form-container {
+    align-items: center;
     border-radius: 12px;
     background: rgba(10, 10, 10, 0.4);
     backdrop-filter: blur(3px);
-    grid-column: 2;
-    grid-row: 2;
     border-radius: 12px;
     padding: 1rem;
   }
@@ -82,39 +73,50 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
+    height: 450px;
+    width: 300px;
+    overflow: hidden;
   }
 
   .grimoire-form-container textarea {
-    padding: 0.5rem;
+    padding: 1rem;
     border-radius: 12px;
-    height: 80%;
-    width: 90%;
     resize: none;
     border: none;
     background-color: #16101a;
     color: #e9d5ff;
     scrollbar-width: none;
+    font-size: 16px;
+    height: 400px;
+    width: 250px;
+  }
+
+  @media (min-width: 768px) {
+    .grimoire-form-container form{
+      width: 650px;
+    }
+
+    .grimoire-form-container textarea {
+      width: 600px;
+    }
   }
 
   .grimoire-form-container textarea:focus {
     outline: none;
-    border: 2px solid #e9d5ff;
+    border: 2px solid #e9d5ff75;
   }
   
   .grimoire-form-container button {
-    padding: 1.5rem;
-    margin-top: 1.5rem;
+    margin-top: 1rem;
+    padding: 1rem;
     background-color: #6a4db9;
     border-radius: 12px;
     color: #e9d5ff;
     border: none;
     cursor: pointer;
-    height: 20%;
-    width: 80%;
+    width: 250px;
   }
   
   .grimoire-form-container button:hover {
-    border: 2px solid #e9d5ff;
+    background-color: #7c5ad8;
   }

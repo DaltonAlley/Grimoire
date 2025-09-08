@@ -32,7 +32,6 @@ type Card struct {
 }
 
 func parseCard(line string, client *http.Client) (Card, error) {
-	// Regex: handle standard format and basic lands (e.g., "1 Plains")
 	re := regexp.MustCompile(`^(\d+)\s+(.+?)(?:\s+\(([^)]+)\)\s+([^\s]+))?$`)
 
 	line = strings.TrimSpace(line)
@@ -53,8 +52,8 @@ func parseCard(line string, client *http.Client) (Card, error) {
 	card := Card{
 		Quantity:        quantity,
 		Name:            matches[2],
-		Set:             matches[3], // May be empty for basic lands
-		CollectorNumber: matches[4], // May be empty for basic lands
+		Set:             matches[3],
+		CollectorNumber: matches[4],
 	}
 
 	url := fmt.Sprintf("https://api.scryfall.com/cards/%s/%s", card.Set, card.CollectorNumber)
