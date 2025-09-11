@@ -2,4 +2,4 @@ tmp/
 *.pdf
 *.log
 .env
-*.templ
+*_templ.go
