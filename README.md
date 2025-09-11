@@ -15,5 +15,7 @@ Output: Generates a PDF with one card per page, including a bleed margin for pro
 
 ## Roadmap
 - [x] Improve UI
+- [ ] Progress Bar
+- [ ] Drag and drop .txt decklist
 - [ ] PDF Generation template that creates maximum number of impressions on 8.5x11 paper
 - [ ] Support additional decklist platforms (e.g., Moxfield, Deckbox)

@@ -22,6 +22,25 @@ import (
 	"github.com/signintech/gopdf"
 )
 
+// Simple rate limiter to ensure no more than 10 requests per second
+var lastRequestTime time.Time
+var rateLimiterMutex sync.Mutex
+
+func rateLimitWait() {
+	rateLimiterMutex.Lock()
+	defer rateLimiterMutex.Unlock()
+
+	now := time.Now()
+	elapsed := now.Sub(lastRequestTime)
+
+	// Ensure at least 100ms between requests (10 requests per second)
+	if elapsed < 100*time.Millisecond {
+		time.Sleep(100*time.Millisecond - elapsed)
+	}
+
+	lastRequestTime = time.Now()
+}
+
 type Card struct {
 	Quantity        int
 	Name            string
@@ -32,7 +51,9 @@ type Card struct {
 }
 
 func parseCard(line string, client *http.Client) (Card, error) {
-	re := regexp.MustCompile(`^(\d+)\s+(.+?)(?:\s+\(([^)]+)\)\s+([^\s]+))?$`)
+	// More robust regex that handles various card name formats and edge cases
+	// This regex is more permissive with whitespace and handles special characters better
+	re := regexp.MustCompile(`^(\d+)\s+(.+?)\s+\(([^)]+)\)\s+([^\s\r\n]+)$`)
 
 	line = strings.TrimSpace(line)
 	if line == "" {
@@ -41,7 +62,14 @@ func parseCard(line string, client *http.Client) (Card, error) {
 
 	matches := re.FindStringSubmatch(line)
 	if matches == nil {
-		return Card{}, fmt.Errorf("could not parse line: %s", line)
+		// Try a more permissive regex as fallback
+		fallbackRe := regexp.MustCompile(`^(\d+)\s+(.+?)\s+\(([^)]+)\)\s+(.+)$`)
+		matches = fallbackRe.FindStringSubmatch(line)
+		if matches == nil {
+			return Card{}, fmt.Errorf("could not parse line: %q", line)
+		}
+		// Clean up the collector number from any trailing whitespace
+		matches[4] = strings.TrimSpace(matches[4])
 	}
 
 	quantity, err := strconv.Atoi(matches[1])
@@ -51,24 +79,54 @@ func parseCard(line string, client *http.Client) (Card, error) {
 
 	card := Card{
 		Quantity:        quantity,
-		Name:            matches[2],
+		Name:            strings.TrimSpace(matches[2]),
 		Set:             matches[3],
 		CollectorNumber: matches[4],
 	}
 
-	url := fmt.Sprintf("https://api.scryfall.com/cards/%s/%s", card.Set, card.CollectorNumber)
-	resp, err := client.Get(url)
-	if err != nil {
-		return Card{}, fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close()
+	// Retry logic for rate limiting
+	maxRetries := 3
+	baseDelay := 100 * time.Millisecond
 
-	if resp.StatusCode != http.StatusOK {
-		return Card{}, fmt.Errorf("API error: status %d", resp.StatusCode)
-	}
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Rate limit API requests
+		rateLimitWait()
 
-	if err := json.NewDecoder(resp.Body).Decode(&card); err != nil {
-		return Card{}, fmt.Errorf("JSON decode failed: %w", err)
+		url := fmt.Sprintf("https://api.scryfall.com/cards/%s/%s", card.Set, card.CollectorNumber)
+		resp, err := client.Get(url)
+		if err != nil {
+			if attempt == maxRetries-1 {
+				return Card{}, fmt.Errorf("HTTP request failed after %d attempts: %w", maxRetries, err)
+			}
+			time.Sleep(baseDelay * time.Duration(1<<attempt)) // Exponential backoff
+			continue
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			resp.Body.Close()
+			if attempt == maxRetries-1 {
+				return Card{}, fmt.Errorf("API rate limited after %d attempts", maxRetries)
+			}
+			// Wait much longer for rate limit (5s, 10s)
+			delay := 5 * time.Second * time.Duration(1<<attempt)
+			log.Printf("Rate limited, waiting %v before retry %d/%d", delay, attempt+2, maxRetries+1)
+			time.Sleep(delay)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return Card{}, fmt.Errorf("API error: status %d", resp.StatusCode)
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&card); err != nil {
+			resp.Body.Close()
+			return Card{}, fmt.Errorf("JSON decode failed: %w", err)
+		}
+		resp.Body.Close()
+
+		// Success - break out of retry loop
+		break
 	}
 
 	if card.Layout == "transform" || card.Layout == "modal_dfc" {
@@ -85,38 +143,121 @@ func parseCard(line string, client *http.Client) (Card, error) {
 	return card, nil
 }
 
+// fetchImageWithRetry fetches an image with retry logic
+func fetchImageWithRetry(uri string, maxRetries int) ([]byte, error) {
+	var lastErr error
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			// Exponential backoff: 1s, 2s, 4s
+			delay := time.Duration(1<<uint(attempt-1)) * time.Second
+			log.Printf("Retrying image fetch for %s (attempt %d/%d) after %v delay", uri, attempt+1, maxRetries+1, delay)
+			time.Sleep(delay)
+		}
+
+		// Rate limit image requests
+		rateLimitWait()
+
+		resp, err := http.Get(uri)
+		if err != nil {
+			lastErr = err
+			log.Printf("Image fetch attempt %d failed for %s: %v", attempt+1, uri, err)
+			continue
+		}
+
+		// Check for HTTP error status
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP error: status %d", resp.StatusCode)
+			log.Printf("Image fetch attempt %d failed for %s: %v", attempt+1, uri, lastErr)
+
+			// Special handling for rate limit (429) - wait longer
+			if resp.StatusCode == http.StatusTooManyRequests && attempt < maxRetries {
+				delay := 5 * time.Second * time.Duration(1<<attempt)
+				log.Printf("Rate limited on image fetch, waiting %v before retry", delay)
+				time.Sleep(delay)
+			}
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = err
+			log.Printf("Image read attempt %d failed for %s: %v", attempt+1, uri, err)
+			continue
+		}
+
+		// Success
+		if attempt > 0 {
+			log.Printf("Image fetch succeeded for %s on attempt %d", uri, attempt+1)
+		}
+		return body, nil
+	}
+
+	return nil, fmt.Errorf("failed to fetch image after %d attempts: %w", maxRetries+1, lastErr)
+}
+
 func submitDecklist(decklist string) ([]Card, error) {
+	// Normalize line endings to handle both Unix (\n) and Windows (\r\n)
+	decklist = strings.ReplaceAll(decklist, "\r\n", "\n")
+	decklist = strings.ReplaceAll(decklist, "\r", "\n")
+
 	lines := strings.Split(decklist, "\n")
 	log.Printf("Parsing %d lines", len(lines))
 
-	// Filter out empty lines
 	var nonEmptyLines []string
-	for _, line := range lines {
-		if strings.TrimSpace(line) != "" {
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
 			nonEmptyLines = append(nonEmptyLines, line)
+		} else {
+			log.Printf("Filtering out empty line %d: %q", i+1, line)
 		}
+	}
+
+	log.Printf("After filtering: %d non-empty lines", len(nonEmptyLines))
+
+	if len(nonEmptyLines) == 0 {
+		return nil, nil // No lines to parse, return empty result
 	}
 
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 30 * time.Second, // Increased timeout for retries
 	}
 
+	// Rate limiting: limit concurrent requests to 1 since we have global rate limiter
+	maxConcurrent := 1
+	semaphore := make(chan struct{}, maxConcurrent)
+
 	var wg sync.WaitGroup
-	cardChan := make(chan Card)
-	errChan := make(chan error, len(nonEmptyLines))
+	// Use a single channel to send both card results and errors
+	resultsChan := make(chan struct {
+		card Card
+		err  error
+	}, len(nonEmptyLines)) // Buffered channel to avoid blocking goroutines
+
 	var cardsCompleted int
 	var mu sync.Mutex // For thread-safe logging and counter
 
-	// Launch goroutines
+	// Launch goroutines with rate limiting
 	for _, line := range nonEmptyLines {
 		wg.Add(1)
 		go func(line string) {
 			defer wg.Done()
 
+			// Acquire semaphore
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
+
 			card, err := parseCard(line, client)
 			if err != nil {
-				errChan <- fmt.Errorf("failed to parse %q: %w", line, err)
+				log.Printf("Failed to parse line: %q, error: %v", line, err)
+				resultsChan <- struct {
+					card Card
+					err  error
+				}{card: Card{}, err: fmt.Errorf("failed to parse %q: %w", line, err)}
 				return
 			}
 
@@ -125,28 +266,30 @@ func submitDecklist(decklist string) ([]Card, error) {
 			log.Printf("Parsed card: %s (%d / %d cards completed)", card.Name, cardsCompleted, len(nonEmptyLines))
 			mu.Unlock()
 
-			cardChan <- card
+			resultsChan <- struct {
+				card Card
+				err  error
+			}{card: card, err: nil}
 		}(line)
 	}
 
-	// Close channels when all goroutines are done
+	// Close the results channel when all goroutines are done
 	go func() {
 		wg.Wait()
-		close(cardChan)
-		close(errChan)
+		close(resultsChan)
 	}()
 
-	// Collect results
+	// Collect results and errors from the single channel
 	var cards []Card
-	for card := range cardChan {
-		cards = append(cards, card)
+	var errors []error
+	for res := range resultsChan {
+		if res.err != nil {
+			errors = append(errors, res.err)
+		} else {
+			cards = append(cards, res.card)
+		}
 	}
 
-	// Collect errors
-	var errors []error
-	for err := range errChan {
-		errors = append(errors, err)
-	}
 	if len(errors) > 0 {
 		return nil, fmt.Errorf("encountered %d errors: %v", len(errors), errors)
 	}
@@ -185,19 +328,15 @@ func generatePDF(cards []Card) (*bytes.Buffer, error) {
 	imageData := make([][]byte, len(allURIs))
 	errs := make([]error, len(allURIs))
 
-	// Concurrently fetch images
+	// Concurrently fetch images with retry logic
 	var wg sync.WaitGroup
 	wg.Add(len(allURIs))
 	for i, uri := range allURIs {
 		go func(i int, uri string) {
 			defer wg.Done()
-			resp, err := http.Get(uri)
-			if err != nil {
-				errs[i] = err
-				return
-			}
-			defer resp.Body.Close()
-			body, err := io.ReadAll(resp.Body)
+
+			// Fetch image with retry (2 additional attempts = 3 total attempts)
+			body, err := fetchImageWithRetry(uri, 2)
 			if err != nil {
 				errs[i] = err
 				return
@@ -208,9 +347,9 @@ func generatePDF(cards []Card) (*bytes.Buffer, error) {
 	wg.Wait()
 
 	// Check for any fetch errors (abort on first error to match original behavior)
-	for _, err := range errs {
+	for i, err := range errs {
 		if err != nil {
-			log.Print(err.Error())
+			log.Printf("Failed to fetch image %d (%s): %v", i+1, allURIs[i], err)
 			return nil, err
 		}
 	}
@@ -218,6 +357,7 @@ func generatePDF(cards []Card) (*bytes.Buffer, error) {
 	// Sequentially add pages to PDF
 	for i := range allURIs {
 		log.Printf("Adding page for %s", collectorNumbers[i])
+
 		pdf.AddPage()
 
 		pdf.SetFillColor(0, 0, 0)
@@ -264,11 +404,13 @@ func main() {
 		cards, err := submitDecklist(r.FormValue("Decklist"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		buf, err := generatePDF(cards)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/pdf")

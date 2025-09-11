@@ -29,7 +29,7 @@ func Index() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html><head><link rel=\"stylesheet\" href=\"/static/css/style.css\"><title>Index Page</title></head><body><div class=\"grimoire-container\"><div class=\"grimoire-header\"><button class=\"circular-button\"><img src=\"/static/images/grimoire.png\" alt=\"Home Button\"></button><h1>Grimoire</h1></div><div class=\"grimoire-form-container\"><form method=\"post\" action=\"/submit\"><textarea name=\"Decklist\" placeholder=\"Enter your decklist here\"></textarea> <button type=\"submit\">Generate PDF</button></form></div></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html><head><link rel=\"stylesheet\" href=\"/static/css/style.css\"><title>Index Page</title></head><body><div class=\"grimoire-container\"><div class=\"grimoire-header\"><button class=\"circular-button\"><img src=\"/static/images/grimoire.png\" alt=\"Home Button\"></button><h1>Grimoire</h1></div><div class=\"grimoire-form-container\"><form method=\"post\" action=\"/submit\"><textarea name=\"Decklist\" spellcheck=\"false\" placeholder=\"Enter your decklist here\"></textarea> <button type=\"submit\">Generate PDF</button></form></div></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
