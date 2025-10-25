@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "none",
+    "outDir": "./public/js",
+    "sourceMap": true,
+    "skipLibCheck": true
+  },
+  "include": ["internal/ts/**/*", "internal/ts/submit.ts"],
+  "exclude": ["node_modules", "**/*.test.ts"]
+}

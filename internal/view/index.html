@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Pirata+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./public/css/style.css">
+    <script src="./public/js/submit.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <link rel="icon" type="image/png" href="./public/image/grimoire.png">
+    <title>{{.Title}}</title>
+</head>
+<body>
+    <div class="grimoire-container">
+        <h1>Grimoire</h1>
+        <div class="grimoire-form-container">
+            <form id="decklistForm">
+                <textarea name="Decklist" spellcheck="false" placeholder="Enter your decklist here"></textarea>
+            </form>
+            <button id="submit2">Generate PDF</button>
+        </div>
+        <div id="jobContainer" class="grimoire-job-container"></div>
+    </div>
+</body>
+</html>

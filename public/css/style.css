@@ -1,0 +1,128 @@
+:root {
+    --grimoire-grey1: #141414;  /* darkest */
+    --grimoire-grey2: #222222;
+    --grimoire-grey3: #3b3b3b;
+    --grimoire-grey4: #636363;  /* lightest */
+    --grimoire-white: #FFFFFF;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--grimoire-grey1);
+    background-attachment: fixed;
+}
+
+a {
+  text-decoration: none;
+}
+
+button, .download-button {
+  text-align: center;    
+  padding: 1rem;
+  background-color: var(--grimoire-grey2);
+  border: 1px solid var(--grimoire-white);
+  color: var(--grimoire-white);
+  cursor: pointer;
+  width: 250px;
+}
+
+button:hover, .download-button:hover {
+  background-color: var(--grimoire-grey3);
+}
+  
+.grimoire-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 300px;
+    padding: 1rem;
+    margin: 0 auto;
+    gap: 1rem;
+}
+
+.grimoire-container h1 {
+    font-family: "Pirata One", system-ui;
+    font-weight: 300;
+    font-style: normal;
+    font-size: 120px;
+    line-height: 1;
+    color: var(--grimoire-white);
+    padding: 0;
+    margin: 0;
+}
+
+  .grimoire-form-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--grimoire-grey2);
+    padding: 1rem;
+    width: 100%;
+    min-height: 490px;
+  }
+
+  .grimoire-form-container form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .grimoire-form-container textarea {
+    resize: none;
+    border: none;
+    background-color: var(--grimoire-grey3);
+    color: var(--grimoire-white);
+    scrollbar-width: none;
+    font-size: 16px;
+    height: 400px;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .grimoire-form-container button {
+    margin-top: auto;
+  }
+
+  @media (min-width: 768px) {
+    .grimoire-container {
+      max-width: 650px;
+    }
+    .grimoire-form-container textarea {
+      max-width: 650px;
+  }
+
+  .grimoire-form-container textarea:focus {
+    outline: none;
+    border: 2px solid var(--grimoire-white);
+  }
+
+  .grimoire-job-container {
+    background-color: var(--grimoire-grey2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--grimoire-white);
+    width: 100%;
+    padding: 1rem;
+  }
+  
+  .grimoire-job {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .grimoire-job div {
+    background-color: var(--grimoire-grey3);
+    padding: 1rem;
+  }
+}

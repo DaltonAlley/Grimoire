@@ -1,0 +1,30 @@
+{
+  "name": "grimoire-test",
+  "version": "1.0.0",
+  "description": "Magic: The Gathering proxy deck generator.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DaltonAlley/Grimoire.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DaltonAlley/Grimoire/issues"
+  },
+  "homepage": "https://github.com/DaltonAlley/Grimoire#readme",
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "htmx.org": "^2.0.7"
+  }
+}
